@@ -4,10 +4,8 @@ const { Sequelize, DataTypes } = require("sequelize"),
 const app = express();
 app.use(express.json());
 
-//const swaggerUi = require('swagger-ui-express');
-//const swaggerDocument = require('./swagger.json');
-
-//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
 var sequelize = new Sequelize("users", "root", null, {
   dialect: "mariadb",
@@ -54,11 +52,6 @@ const Tasks = sequelize.define("tasks", {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  date_added: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW
-  },
   sheduled_date: {
     type: DataTypes.DATE,
     allowNull: false
@@ -72,12 +65,10 @@ Users.sync();
 Tasks.sync();
 
 app.get("/", function(req, res) {
-  res.redirect("/api");
+  express = require("./frontend.js");
 });
 
-app.get("/api", async (req, res) => {
-  res.send("<body>123</body>");
-});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get("/api/tasks", async (req, res) => {
   try {
@@ -127,7 +118,12 @@ app.post("/api/tasks", async (req, res) => {
       });
       res.json(task);
     } catch (e) {
-      res.send({ error: e });
+      if(e.name == 'SequelizeForeignKeyConstraintError') {
+        res.send({ error: 'User_id dont exist. Create user before!' });
+      } else {
+        res.send({ error: e });
+      }
+      
     }
   }
 });
@@ -239,7 +235,7 @@ app.delete("/api/users/:id", async (req, res) => {
   try {
     const task = await Users.destroy({ where: { user_id: req.params.id } });
     if (!task) throw "Не такого элемента!";
-    res.send({ status: "ok", desc: `Элемент id=${req.params.id} удален` });
+    res.send({ status: "ok", desc: `User id=${req.params.id} deleted` });
   } catch (e) {
     res.send({ error: e });
   }

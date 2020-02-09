@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+</head>
+<header>
+    <div class="row">
+        <div class="col">
+            <p class="text-center">To add new tasks you need add user, choose him and add task in list of needed
+                user</p>
+        </div>
+    </div>
+</header>
+<body>
+    <div class="fluid-container">
+        <div class="row">
+            <div class="col-3">
+                <ul class="list-group" id="users">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <button type="button" id="addUser" class="btn btn-success">+</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-9">
+                <div class="row" id="tasks"></div>
+                <div class="row">
+                    <div class="col-12"><button type="button" id="addTask" class="btn btn-success">+</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<footer>
+    <div class="modal fade" id="modalAddTask" tabindex="-1" role="dialog" aria-labelledby="modalAddTask"
+    aria-hidden="true">
+    <form id="formAddTask">
+        <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+            <h4 class="modal-title w-100 font-weight-bold">Form of add task</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body mx-3">
+                <div class="md-form mb-1">
+                    <input type="text" id="title" name="title" class="task-input form-control validate" placeholder="Task title">
+                    <input type="hidden" id="user_id" name="user_id" class="form-control validate">
+                </div>  
+                <div class="md-form mb-1">
+                    <input type="text" id="description" name="description" class="task-input form-control validate" placeholder="Task description">
+                </div>  
+                <div class="md-form mb-1">
+                    <input type="text" id="sheduled_date" name="sheduled_date" class="task-input form-control validate" placeholder="Task sheduled date example 2020-02-01">
+                </div> 
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button id="saveTask" type="button" class="btn btn-default">Add task</button>
+            </div>
+        </div>
+        </div>
+    </form>
+    </div>
+</footer>
+<script>
+    async function getAllTasks() {
+        let response = await fetch('http://localhost:3000/api/tasks');
+
+        if (response.ok) {
+            let json = await response.json();
+            return json;
+        } else {
+            alert("Error HTTP: " + response.status);
+            return [];
+        }
+    }
+
+    async function getAllUsers() {
+        let response = await fetch('http://localhost:3000/api/users');
+        if (response.ok) {
+            let json = await response.json();
+            return json;
+        } else {
+            alert("Error HTTP: " + response.status);
+            return [];
+        }
+    }
+
+    async function getUsersById(id) {
+        let response = await fetch('http://localhost:3000/api/users/'+ id);
+        if (response.ok) {
+            let json = await response.json();
+            return json;
+        } else {
+            alert("Error HTTP: " + response.status);
+            return [];
+        }
+    }
+
+    function addUserHtml(data) {
+        let html  = '<li class="list-group-item d-flex justify-content-between align-items-center">';
+            html += '<span class="username" data-user_id="'+data.user_id+'">' + data.name + ' (user_id=' + data.user_id + ')</span>';
+            html += '<span class="badge badge-primary badge-pill">' + (typeof data.tasks != 'undefined' ? data.tasks.length : 0) + '</span><button type="button" data-user_id="'+data.user_id+'" class="btn btn-danger">-</button>';
+            html += '</li>';
+        return html;
+    }
+
+    function addTaskHtml(data) {
+        let html  = '<div class="col-sm-3">';
+            html += '<div class="card mb-3">';
+            html += '<div class="card-body">';
+            html += '<h5 class="card-title">'+ data.title +'</h5>';
+            html += '<p class="card-text">'+ data.description +'</p>';
+            html += '<button type="button" class="btn btn-danger">-</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+        return html;
+    }
+
+    function addUserInput() {
+        let html  = '<li id="addInput" class="list-group-item d-flex justify-content-between align-items-center">';
+            html += '<input type="text" class="form-control" placeholder="Username" name="username">';
+            html += '<button class="btn btn-primary" type="button" id="saveUser">+</button>';
+            html += '<button class="btn btn-danger" type="button" onclick="$(this).parent().remove()">-</button>';
+            html += '</li>';
+        return html;
+    }
+
+    
+    async function saveUser() {
+        const data = { name: $('input[name="username"]').val() };
+
+        try {
+            const response = await fetch('http://localhost:3000/api/users', {
+                method: 'POST', 
+                body: JSON.stringify(data), 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            $('#users').prepend(addUserHtml(json));
+            $('#tasks').html('');
+        } catch (error) {
+            alert('Error:', error);
+        }
+    }
+
+    async function saveTask() {         
+        data = {
+            title: $('input[name="title"]').val(),
+            description: $('input[name="description"]').val(),
+            sheduled_date: $('input[name="sheduled_date"]').val(),
+            user_id: $('.username.active').data('user_id')
+        };
+        
+        try {
+            const response = await fetch('http://localhost:3000/api/tasks', {
+                method: 'POST', 
+                body: JSON.stringify(data), 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            $('#tasks').append(addTaskHtml(json));
+        } catch (error) {
+            alert('Error:', error);
+        }
+        
+    }
+
+    $(document).ready(function () {
+        getAllUsers()
+            .then(data => {
+                for (let key in data) {
+                    $('#users').prepend(addUserHtml(data[key]));
+                    if(key == (data.length - 1)) { //add task for last user
+                        $('.username').eq(0).addClass('active');
+                        if(typeof data[key].tasks != 'undefined') {
+                            $('#tasks').html('');
+                            for (let task_key in data[key].tasks) {
+                                $('#tasks').prepend(addTaskHtml(data[key].tasks[task_key]));
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(err => alert('Catch error', err));
+
+        $(document).on("click", "#addUser" , function() {
+            $('#addInput').remove();
+            $(this).parent().after(addUserInput());
+        });
+        $(document).on("click", "#saveUser" , saveUser);
+
+        $(document).on("click", ".username" , function(){
+            $('.username').removeClass('active');
+            $(this).addClass('active');
+            let user_id = $(this).data('user_id');
+            getUsersById(user_id)
+            .then(data => {
+                $('#tasks').html('');
+                if(data.length > 0 && data[0].tasks.length > 0){
+                    for (let task_key in data[0].tasks) {
+                        $('#tasks').prepend(addTaskHtml(data[0].tasks[task_key]));
+                    }
+                }
+            })
+            .catch(err => alert('Catch error', err));
+        });
+        
+        $(document).on("click", "#addTask" , function(){
+            $('#modalAddTask input').val('');
+            $('#modalAddTask').modal('show');
+        });
+
+        $(document).on("click", "#saveTask" , function(){
+            saveTask();
+            $('#modalAddTask').modal('hide');
+        });
+
+    });
+</script>
+</html>

@@ -3,6 +3,7 @@ const { Sequelize, DataTypes } = require("sequelize"),
 
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
@@ -65,7 +66,11 @@ Users.sync();
 Tasks.sync();
 
 app.get("/", function(req, res) {
-  express = require("./frontend.js");
+  res.sendFile(__dirname + '/index.html');
+});
+
+app.get("/stylesheet.css", function(req, res) {
+  res.sendFile(__dirname + '/stylesheet.css');
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -167,6 +172,9 @@ app.get("/api/users", async (req, res) => {
           model: Tasks,
           required: false
         }
+      ],
+      order: [
+        ['updatedAt', 'DESC'],
       ]
     });
     if (!users.length) throw "Массив данных пуст!";
@@ -200,9 +208,8 @@ app.post("/api/users", async (req, res) => {
     res.sendStatus(400);
   } else {
     try {
-      const task = await Users.create({ name: req.body.name });
-      console.log(task);
-      res.json(task);
+      const user = await Users.create({ name: req.body.name });
+      res.json(user);
     } catch (e) {
       res.send({ error: e });
     }
@@ -214,7 +221,7 @@ app.put("/api/users/:id", async (req, res) => {
     res.sendStatus(400);
   } else {
     try {
-      const task = await Users.update(
+      const user = await Users.update(
         {
           name: req.body.name
         },

@@ -1,0 +1,9 @@
+.username {
+    cursor: pointer
+}
+.username.active {
+    color: #007bff;
+}
+.username:hover {
+    text-decoration: underline;
+}

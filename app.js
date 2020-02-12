@@ -137,28 +137,35 @@ app.put("/api/tasks/:id", async (req, res) => {
   if (!Object.keys(req.body).length) {
     res.sendStatus(400);
   } else {
-    const task = await Tasks.update(
-      {
-        title: req.body.title,
-        user_id: req.body.user_id,
-        description: req.body.description,
-        sheduled_date: req.body.sheduled_date
-      },
-      {
-        where: {
-          task_id: req.params.id
+
+    try {
+      const task = await Tasks.update(
+        {
+          title: req.body.title,
+          user_id: req.body.user_id,
+          description: req.body.description,
+          sheduled_date: req.body.sheduled_date
+        },
+        {
+          where: {
+            id: req.params.id
+          }
         }
-      }
-    );
-    res.json(task);
+      );
+
+      if (!task) throw "Не такого элемента!";
+      res.send({ status: "ok", desc: `Task id=${req.params.id} updated` });
+    } catch (e) {
+      res.send({ error: e });
+    }
   }
 });
 
 app.delete("/api/tasks/:id", async (req, res) => {
   try {
-    const task = await Tasks.destroy({ where: { task_id: req.params.id } });
+    const task = await Tasks.destroy({ where: { id: req.params.id } });
     if (!task) throw "Не такого элемента!";
-    res.send({ status: "ok", desc: `Элемент id=${req.params.id} удален` });
+    res.send({ status: "ok", desc: `Task id=${req.params.id} deleted` });
   } catch (e) {
     res.send({ error: e });
   }
@@ -231,7 +238,7 @@ app.put("/api/users/:id", async (req, res) => {
           }
         }
       );
-      res.json({ success: "true" });
+      res.json({ status: "ok", desc: `User id=${req.params.id} updated` });
     } catch (e) {
       res.send({ error: e });
     }

@@ -73,10 +73,55 @@
         </div>
     </form>
     </div>
+    <div class="modal fade" id="modalUpdateTask" tabindex="-1" role="dialog" aria-labelledby="modalUpdateTask"
+    aria-hidden="true">
+    <form id="formUpdateTask">
+        <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+            <h4 class="modal-title w-100 font-weight-bold">Form of add task</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body mx-3">
+                <div class="md-form mb-1">
+                    <input type="text" name="new_title" class="task-input form-control validate" placeholder="Task title">
+                    <input type="hidden" name="update_task_id" value="">
+                </div>  
+                <div class="md-form mb-1">
+                    <input type="text" name="new_user_id" class="task-input form-control validate" placeholder="Task user id">
+                </div>  
+                <div class="md-form mb-1">
+                    <input type="text" name="new_description" class="task-input form-control validate" placeholder="Task description">
+                </div>  
+                <div class="md-form mb-1">
+                    <input type="text" name="new_sheduled_date" class="task-input form-control validate" placeholder="Task sheduled date example 2020-02-01">
+                </div> 
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button id="updateTask" type="button" class="btn btn-default">Update task</button>
+            </div>
+        </div>
+        </div>
+    </form>
+    </div>
 </footer>
 <script>
     async function getAllTasks() {
         let response = await fetch('http://localhost:3000/api/tasks');
+
+        if (response.ok) {
+            let json = await response.json();
+            return json;
+        } else {
+            alert("Error HTTP: " + response.status);
+            return [];
+        }
+    }
+
+    async function getTaskById(id) {
+        let response = await fetch('http://localhost:3000/api/tasks/' + id);
 
         if (response.ok) {
             let json = await response.json();
@@ -110,35 +155,51 @@
     }
 
     function addUserHtml(data) {
-        let html  = '<li class="list-group-item d-flex justify-content-between align-items-center">';
-            html += '<span class="username" data-user_id="'+data.user_id+'">' + data.name + ' (user_id=' + data.user_id + ')</span>';
-            html += '<span class="badge badge-primary badge-pill">' + (typeof data.tasks != 'undefined' ? data.tasks.length : 0) + '</span><button type="button" data-user_id="'+data.user_id+'" class="btn btn-danger">-</button>';
+        let html  = '<li id="user'+data.user_id+'" class="list-group-item d-flex justify-content-between align-items-center user-card">';
+                html += '<span class="userinfo" data-user_id="'+data.user_id+'"><span class="username">' + data.name + '</span> <span class="user_id_tip">(user_id=' + data.user_id + ')</span></span>';
+                html += '<span class="badge badge-primary badge-pill ml-auto mr-2">' + (typeof data.tasks != 'undefined' ? data.tasks.length : 0) + '</span>';
+                html += '<div class="d-flex justify-content-between align-items-center">';
+                    html += '<button type="button" data-user_id="'+data.user_id+'" class="btn btn-warning update-user mr-1">...</button>';
+                    html += '<button type="button" data-user_id="'+data.user_id+'" class="btn btn-danger remove-user">-</button>';
+                html += '</div>';
             html += '</li>';
         return html;
     }
 
     function addTaskHtml(data) {
-        let html  = '<div class="col-sm-3">';
-            html += '<div class="card mb-3">';
-            html += '<div class="card-body">';
-            html += '<h5 class="card-title">'+ data.title +'</h5>';
-            html += '<p class="card-text">'+ data.description +'</p>';
-            html += '<button type="button" class="btn btn-danger">-</button>';
-            html += '</div>';
-            html += '</div>';
+        let date = new Date(data.sheduled_date); 
+        let sheduled_date = date.toISOString().split('T')[0];
+
+        let html  = '<div class="col-sm-3 task-card" id="task'+data.id+'">';
+                html += '<div class="card mb-3">';
+                    html += '<div class="card-body">';
+                        html += '<h5 class="card-title">'+ data.title +' ('+ sheduled_date +')</h5>';
+                        html += '<p class="card-text">'+ data.description +'</p>';
+                        html += '<button type="button" class="btn btn-warning update-task mr-1" data-task_id="'+data.id+'">...</button>';
+                        html += '<button type="button" class="btn btn-danger remove-task" data-task_id="'+data.id+'">-</button>';
+                    html += '</div>';
+                html += '</div>';
             html += '</div>';
         return html;
     }
 
     function addUserInput() {
         let html  = '<li id="addInput" class="list-group-item d-flex justify-content-between align-items-center">';
-            html += '<input type="text" class="form-control" placeholder="Username" name="username">';
-            html += '<button class="btn btn-primary" type="button" id="saveUser">+</button>';
-            html += '<button class="btn btn-danger" type="button" onclick="$(this).parent().remove()">-</button>';
+                html += '<input type="text" class="form-control" placeholder="Username" name="username">';
+                html += '<button class="btn btn-primary" type="button" id="saveUser">+</button>';
+                html += '<button class="btn btn-danger" type="button" onclick="$(this).parent().remove()">-</button>';
             html += '</li>';
         return html;
     }
 
+    function addUserInputUpdate(username_old_text, user_id) {
+        let html  = '<li id="updateInput" class="list-group-item d-flex justify-content-between align-items-center">';
+                html += '<input type="text" class="form-control" placeholder="Username" name="updatename" value="'+ username_old_text +'">';
+                html += '<button class="btn btn-primary" type="button" data-user_id="'+ user_id +'" id="updateUser">+</button>';
+                html += '<button class="btn btn-danger" type="button" onclick="$(this).parent().remove()">-</button>';
+            html += '</li>';
+        return html;
+    }
     
     async function saveUser() {
         const data = { name: $('input[name="username"]').val() };
@@ -154,6 +215,48 @@
             const json = await response.json();
             $('#users').prepend(addUserHtml(json));
             $('#tasks').html('');
+            $('.userinfo').eq(0).click();
+        } catch (error) {
+            alert('Error:', error);
+        }
+    }
+
+    async function updateUser(user_id) {
+        const data = { name: $('input[name="updatename"]').val() };
+
+        try {
+            const response = await fetch('http://localhost:3000/api/users/' + user_id, {
+                method: 'PUT', 
+                body: JSON.stringify(data), 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            if(typeof json.status != 'undefined' && json.status == 'ok') {
+                alert(json.desc);
+            } else if(typeof json.error != 'undefined') {
+                alert(json.error);
+            }   
+        } catch (error) {
+            alert('Error:', error);
+        }
+    }
+
+    async function deleteUser(user_id) {
+        try {
+            const response = await fetch('http://localhost:3000/api/users/' + user_id, {
+                method: 'DELETE', 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            if(typeof json.status != 'undefined' && json.status == 'ok') {
+                alert(json.desc);
+            } else if(typeof json.error != 'undefined') {
+                alert(json.error);
+            }            
         } catch (error) {
             alert('Error:', error);
         }
@@ -164,7 +267,7 @@
             title: $('input[name="title"]').val(),
             description: $('input[name="description"]').val(),
             sheduled_date: $('input[name="sheduled_date"]').val(),
-            user_id: $('.username.active').data('user_id')
+            user_id: $('.userinfo.active').data('user_id')
         };
         
         try {
@@ -183,13 +286,60 @@
         
     }
 
+    async function updateTask(task_id) {         
+        data = {
+            title: $('input[name="new_title"]').val(),
+            description: $('input[name="new_description"]').val(),
+            sheduled_date: $('input[name="new_sheduled_date"]').val(),
+            user_id: $('input[name="new_user_id"]').val()
+        };
+        
+        try {
+            const response = await fetch('http://localhost:3000/api/tasks/' + task_id, {
+                method: 'PUT', 
+                body: JSON.stringify(data), 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            if(typeof json.status != 'undefined' && json.status == 'ok') {
+                alert(json.desc);
+            } else if(typeof json.error != 'undefined') {
+                alert(json.error);
+            }
+        } catch (error) {
+            alert('Error:', error);
+        }
+        
+    }
+    
+    async function deleteTask(tasks_id) {
+        try {
+            const response = await fetch('http://localhost:3000/api/tasks/' + tasks_id, {
+                method: 'DELETE', 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const json = await response.json();
+            if(typeof json.status != 'undefined' && json.status == 'ok') {
+                alert(json.desc);
+            } else if(typeof json.error != 'undefined') {
+                alert(json.error);
+            }            
+        } catch (error) {
+            alert('Error:', error);
+        }
+    }
+
     $(document).ready(function () {
         getAllUsers()
             .then(data => {
                 for (let key in data) {
                     $('#users').prepend(addUserHtml(data[key]));
                     if(key == (data.length - 1)) { //add task for last user
-                        $('.username').eq(0).addClass('active');
+                        $('.userinfo').eq(0).addClass('active');
                         if(typeof data[key].tasks != 'undefined') {
                             $('#tasks').html('');
                             for (let task_key in data[key].tasks) {
@@ -199,16 +349,17 @@
                     }
                 }
             })
-            .catch(err => alert('Catch error', err));
+            .catch(err => alert('Catch error1', err));
 
-        $(document).on("click", "#addUser" , function() {
+        $(document).on("click", "#addUser" , function(){
             $('#addInput').remove();
             $(this).parent().after(addUserInput());
         });
+
         $(document).on("click", "#saveUser" , saveUser);
 
-        $(document).on("click", ".username" , function(){
-            $('.username').removeClass('active');
+        $(document).on("click", ".userinfo" , function(){
+            $('.userinfo').removeClass('active');
             $(this).addClass('active');
             let user_id = $(this).data('user_id');
             getUsersById(user_id)
@@ -220,7 +371,7 @@
                     }
                 }
             })
-            .catch(err => alert('Catch error', err));
+            .catch(err => alert('Catch error2', err));
         });
         
         $(document).on("click", "#addTask" , function(){
@@ -231,6 +382,75 @@
         $(document).on("click", "#saveTask" , function(){
             saveTask();
             $('#modalAddTask').modal('hide');
+        });
+
+        $(document).on("click", ".remove-user" , function(){
+            deleteUser($(this).data('user_id'));
+            $(this).parent().remove();
+            $('.userinfo').eq(0).click();
+        });
+
+        $(document).on("click", ".remove-task" , function(){
+            deleteTask($(this).data('task_id'));
+            $(this).parents('.task-card').remove();
+        });
+
+        $(document).on("click", ".update-user" , function(){
+            let user_card = $(this).parents('.user-card');
+            let userinfo = user_card.find('.userinfo');
+            let username = userinfo.find('.username');
+            let username_old_text = username.text();
+            let user_id = userinfo.data('user_id');
+            userinfo.after(addUserInputUpdate(username_old_text, user_id));
+        });
+
+        $(document).on("click", "#updateUser" , function(){
+            let user_id = $(this).data('user_id');
+            updateUser(user_id);
+            let updatename = $('input[name="updatename"]').val();
+            $('#user' + user_id + ' .username').text(updatename);
+            $('#updateInput').remove();
+        });
+
+        $(document).on("click", ".update-task" , function(){
+            let task_id = $(this).data('task_id');
+            getTaskById(task_id)
+            .then(data => {
+                if(data.length > 0){
+                    let date = new Date(data[0].sheduled_date); 
+                    let sheduled_date = date.toISOString().split('T')[0];
+                    $('#modalUpdateTask input[name="new_title"]').val(data[0].title);
+                    $('#modalUpdateTask input[name="new_description"]').val(data[0].description);
+                    $('#modalUpdateTask input[name="new_sheduled_date"]').val(sheduled_date);
+                    $('#modalUpdateTask input[name="new_user_id"]').val(data[0].user_id);
+                    $('#modalUpdateTask input[name="update_task_id"]').val(task_id);
+                    $('#modalUpdateTask').modal('show');
+                }
+            })
+            .catch(err => alert('Catch error3', err));
+
+        });
+
+        $(document).on("click", "#updateTask" , function(){
+            let task_id = $('#modalUpdateTask input[name="update_task_id"]').val();
+            updateTask(task_id);
+            let active_user = $('.userinfo.active').data('user_id');
+            new_data = {
+                title: $('#modalUpdateTask input[name="new_title"]').val(),
+                description: $('#modalUpdateTask input[name="new_description"]').val(),
+                sheduled_date: $('#modalUpdateTask input[name="new_sheduled_date"]').val(),
+                user_id: $('#modalUpdateTask input[name="new_user_id"]').val(),
+                id: $('#modalUpdateTask input[name="update_task_id"]').val()
+            };
+            if(active_user == new_data.user_id) {
+                $('#task'+task_id+ ' .card-title').text(new_data.title+ ' (' + new_data.sheduled_date + ')');
+                $('#task'+task_id+ ' .card-text').text(new_data.description);
+            } else {
+                $('#task'+task_id).remove();
+            }
+
+            $('#modalUpdateTask').modal('hide');
+            $('#modalUpdateTask input').val();
         });
 
     });

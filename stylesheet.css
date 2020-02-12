@@ -1,9 +1,13 @@
-.username {
+.userinfo {
     cursor: pointer
 }
-.username.active {
+.userinfo.active {
     color: #007bff;
 }
-.username:hover {
+.userinfo:hover {
     text-decoration: underline;
+}
+#updateInput {
+	position: absolute;
+	left: 0;
 }
